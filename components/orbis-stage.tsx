@@ -5,7 +5,6 @@ import type { OrbisSession } from "@/hooks/use-orbis-session";
 import { type OrbisModel } from "@/lib/orbis";
 import { padTerrainSeed, satelliteEvents, stageViews, terrainSeedBackground, terrainSeedScale, timelinePaces, type StageView, type TimelinePace } from "@/lib/orbis-stage";
 
-const model = "dynamic";
 const defaultPace = "fast" satisfies TimelinePace;
 type Size = { width: number; height: number };
 type Direction = {
@@ -70,6 +69,7 @@ export default function OrbisStage() {
     const requested = new URLSearchParams(window.location.search).get("view");
     return requested && Object.hasOwn(stageViews, requested) ? requested as StageView : "satellite";
   });
+  const [model, setModel] = useState<OrbisModel>("dynamic");
   const [presenting, setPresenting] = useState(false);
   const fullscreenRoot = useRef<HTMLDivElement>(null);
   const viewer = useRef<Window | null>(null);
@@ -143,15 +143,17 @@ export default function OrbisStage() {
 
   return <div ref={fullscreenRoot}>
     <OrbisDemo model={model} render={(session) => (
-      <Stage view={view}
+      <Stage view={view} model={model} onModelChange={setModel}
         session={session} presenting={presenting} present={present} closeViewer={closeViewer} />
     )} />
   </div>;
 }
 
-function Stage({ session, view, presenting, present, closeViewer }: {
+function Stage({ session, view, model, onModelChange, presenting, present, closeViewer }: {
   session: OrbisSession;
   view: StageView;
+  model: OrbisModel;
+  onModelChange: (model: OrbisModel) => void;
   presenting: boolean;
   present: (noteActivity: () => void) => Promise<void>;
   closeViewer: () => void;
@@ -243,6 +245,20 @@ function Stage({ session, view, presenting, present, closeViewer }: {
     }
   }
 
+  async function switchModel() {
+    if (busy || actionInFlight.current || session.runStarted && hasFrame) return;
+    actionInFlight.current = true;
+    setPending(true);
+    try {
+      if (session.connected && !await session.disconnectSession()) return;
+      closeViewer();
+      onModelChange(model === "dynamic" ? "stable" : "dynamic");
+    } finally {
+      actionInFlight.current = false;
+      setPending(false);
+    }
+  }
+
   async function steer(label: string, text: string, { clearDraft = false, instant = false } = {}) {
     const direction = text.trim();
     if (!direction || !readyToSteer || actionInFlight.current) return false;
@@ -325,7 +341,10 @@ function Stage({ session, view, presenting, present, closeViewer }: {
             <span className="stage-light" aria-hidden="true" />{status}
           </span>
           <div className="stage-monitor-tools">
-            {!session.runStarted && <button className="stage-primary" type="button" disabled={busy} onClick={() => void start()}>Start stream</button>}
+            {!session.runStarted && <button className="stage-primary" type="button" disabled={busy} onClick={() => void start()}>{model === "stable" ? "Start Stable" : "Start stream"}</button>}
+            {(!session.runStarted || !hasFrame) && <button type="button" disabled={busy} onClick={() => void switchModel()}>
+              {model === "dynamic" ? "Use Stable" : "Use Dynamic"}
+            </button>}
             {session.runStarted && <div className="stage-transport" aria-label="Stream controls">
               <button type="button" disabled={busy || !hasFrame} onClick={() => void (session.paused ? session.resume() : session.pause())}>{session.paused ? "Resume" : "Pause"}</button>
               <button type="button" aria-pressed={!session.muted} onClick={session.toggleMuted}>{session.muted ? "Enable sound" : "Mute"}</button>
@@ -396,7 +415,7 @@ function Stage({ session, view, presenting, present, closeViewer }: {
           <div className="stage-quick" aria-label="Scene directions">
             {view === "satellite" && <button type="button" className="stage-primary" disabled={!readyToSteer} onClick={() => void sendRandomEvent()}>Random event</button>}
             {(view === "satellite" ? scene.directions.slice(0, 1) : scene.directions).map((direction) => <button type="button" key={direction.label} disabled={!readyToSteer} onClick={() => void steer(direction.label, direction.text, { instant: "instant" in direction && direction.instant === true })}>{direction.label}</button>)}
-            {view === "satellite" && <select aria-label="More events" value="" disabled={!readyToSteer} onChange={(event) => {
+            {view === "satellite" && <select className="stage-more-events" aria-label="More events" value="" disabled={!readyToSteer} onChange={(event) => {
               const direction = scene.directions.find(({ label }) => label === event.target.value);
               if (direction) void steer(direction.label, direction.text);
             }}>

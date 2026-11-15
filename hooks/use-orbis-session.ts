@@ -427,7 +427,7 @@ export function useOrbisSession(
     });
 
   const disconnectSession = async (idle = false) => {
-    if (disconnecting.current || inFlight.current) return;
+    if (disconnecting.current || inFlight.current) return false;
     disconnecting.current = true;
     setRunStarted(false);
     setPaused(false);
@@ -454,6 +454,7 @@ export function useOrbisSession(
         clearJwt();
         if (idle) setSessionNotice("Orbis disconnected after inactivity.");
       }
+      return disconnected;
     } finally {
       disconnecting.current = false;
     }

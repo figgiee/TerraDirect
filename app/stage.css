@@ -182,6 +182,7 @@
 .stage-command input::placeholder { color: var(--secondary); }
 .stage-quick, .stage-transport { flex-wrap: wrap; }
 .stage-quick button { min-width: var(--control-height); }
+.stage-quick .stage-more-events { width: auto; max-width: 100%; }
 
 .stage-foot { min-width: 0; gap: 0.7em 1.5em; }
 .stage-foot p { margin: 0; color: var(--secondary); }
