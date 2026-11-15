@@ -389,3 +389,14 @@
   .stage-foot:empty { display: none; }
   .stage-history-panel { max-height: min(45dvh, 30rem); }
 }
+
+@media (hover: hover) and (pointer: fine) {
+  .stage-monitor:not(:hover):not(:has(:focus-visible)) :is(.stage-monitor-bar, .stage-dock, .stage-foot, .stage-wait) {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .stage-monitor:not(:hover):not(:has(:focus-visible)) :is(.stage-monitor-bar, .stage-dock, .stage-foot, .stage-wait) * {
+    pointer-events: none;
+  }
+}

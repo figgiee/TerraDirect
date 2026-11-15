@@ -36,14 +36,13 @@ export const stageViews = {
     frameName: "Glacial valley with a small riverside settlement",
     opening: satelliteOpening,
     directions: [
-      { label: "Meteor impact", instant: true, text: "A small meteor strikes the bare slope above the river bend. A brief flash gives way to a rising dust plume on that slope. Wide, stationary daylight aerial shot of the same valley, with the river bend and glacier in view." },
-      {
-        label: "Farms · 300 years",
-        text: "Parallel dark plough furrows appear across the open pasture immediately left of the existing farmhouse cluster. The fixed aerial view holds the glacier, gravel bar and farmhouses through the three-century time-lapse.",
-      },
       {
         label: "Glacier retreat",
         text: "The lower edge of the blue glacier pulls uphill and exposes a broad strip of dark bedrock beside the same rock face. Hold the original aerial framing.",
+      },
+      {
+        label: "Farms · 300 years",
+        text: "Parallel dark plough furrows appear across the open pasture immediately left of the existing farmhouse cluster. The fixed aerial view holds the glacier, gravel bar and farmhouses through the three-century time-lapse.",
       },
       {
         label: "Block creek",
@@ -119,6 +118,18 @@ export const satelliteEvents = [
   ["Autumn foliage", "The existing trees along the near bank turn copper and gold."],
   ["Forest edge advances", "Dark green trees spread from the existing forest edge into a narrow strip of the open meadow."],
   ["Field ploughed", "Dark parallel furrows appear in the open pasture beside the original farmhouses."],
+  ["Waterfall appears", "A tall white waterfall begins spilling over the dark rock face to the right of the glacier, throwing mist at its base."],
+  ["Floodplain fills", "The river overtops its bank and spreads a reflective sheet across the low meadow below the farmhouses, leaving the houses on dry ground."],
+  ["Glacial lake forms", "Turquoise meltwater spreads into the shallow basin immediately below the glacier while the downstream river stays in its channel."],
+  ["Ice turns blue", "Fresh fractures spread across the face of the glacier, revealing vivid blue ice against its pale upper surface."],
+  ["Avalanche", "A white curtain of snow slides down the steep far ridge and settles above the tree line."],
+  ["Hillside blooms", "A broad band of yellow wildflowers blooms across the open hillside above the river bend."],
+  ["Meadow dries", "The green pasture around the farmhouses turns tawny and dry. The darker trees along the river stay green."],
+  ["Frost at dawn", "Silver frost spreads across the low fields around the farmhouses as the first sunlight reaches the ridge."],
+  ["Alpenglow", "The glacier and upper rock faces turn pink and orange at dusk while the valley floor falls into blue shade."],
+  ["Village lights come on", "The valley darkens at dusk and warm lights appear one by one in the existing farmhouses by the river."],
+  ["Footbridge built", "A narrow wooden footbridge takes shape across the river beside the gravel bar, linking two paths at the water's edge."],
+  ["Orchard grows", "Rows of small fruit trees fill the field closest to the farmhouses and develop pale blossoms."],
 ] as const;
 
 export const timelinePaces = {

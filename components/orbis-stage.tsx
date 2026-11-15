@@ -414,7 +414,7 @@ function Stage({ session, view, model, onModelChange, presenting, present, close
           </form>
           <div className="stage-quick" aria-label="Scene directions">
             {view === "satellite" && <button type="button" className="stage-primary" disabled={!readyToSteer} onClick={() => void sendRandomEvent()}>Random event</button>}
-            {(view === "satellite" ? scene.directions.slice(0, 1) : scene.directions).map((direction) => <button type="button" key={direction.label} disabled={!readyToSteer} onClick={() => void steer(direction.label, direction.text, { instant: "instant" in direction && direction.instant === true })}>{direction.label}</button>)}
+            {(view === "satellite" ? scene.directions.slice(0, 1) : scene.directions).map((direction) => <button type="button" key={direction.label} disabled={!readyToSteer} onClick={() => void steer(direction.label, direction.text)}>{direction.label}</button>)}
             {view === "satellite" && <select className="stage-more-events" aria-label="More events" value="" disabled={!readyToSteer} onChange={(event) => {
               const direction = scene.directions.find(({ label }) => label === event.target.value);
               if (direction) void steer(direction.label, direction.text);

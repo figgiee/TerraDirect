@@ -12,11 +12,10 @@ By November 14, 2026 at 5:30 p.m. Pacific, use the two Reactor research chats to
 
 ## Events to test
 
-Start with **Meteor impact** in Dynamic. In one live rehearsal, a flash appeared by the 9-second sample and gave way to a dust plume. The valley stayed recognizable. Send the next direction after observing the current one. [Rehearsal evidence](orbis.md#approved-satellite-steering)
+Start with **Glacier retreat** in Dynamic or choose **Random event**. Watch the glacier edge or another landmark named by the direction before sending the next one. [Rehearsal evidence](orbis.md#approved-satellite-steering)
 
 | Direction | Visible evidence |
 | --- | --- |
-| **Meteor impact** | A flash and dust plume appear on the slope while the glacier and river bend stay recognizable. |
 | **Farms · 300 years** | New dark furrows form in the open pasture immediately left of the houses and below the curved farm lane. The houses or lane identify the same field across the change. |
 | **Glacier retreat** | The lower ice edge recedes against the same rock face and exposes previously covered bedrock. |
 | **Block creek** | A new deposit blocks the original channel at the gravel bar. Water backs up and takes a visibly different route in the same shot. |
@@ -27,9 +26,9 @@ Use the runoff and spillway rehearsal to define what to look for. The original c
 
 ## Run the demo
 
-1. Select **Start stream** and wait for **Live**. Select **Present** to open the video-only audience window. Share that window and steer from the original tab. Double-click the video to enter fullscreen. If the browser blocks the window, **Present** enters video-only fullscreen in the original tab and Escape restores the controls.
-2. Once the glacier and river bend are visible, select **Meteor impact**. Judges can also type their own direction and select **Apply**.
-   **Random event** sends one of 18 landscape directions to the active Orbis stream. The receipt names the selected event.
+1. Hover over the viewport to reveal the desktop controls. Select **Start stream** and wait for **Live**. Select **Present** to open the video-only audience window. Share that window and steer from the original tab. Double-click the video to enter fullscreen. If the browser blocks the window, **Present** enters video-only fullscreen in the original tab and Escape restores the controls.
+2. Once the glacier and river bend are visible, select **Glacier retreat**. Judges can also type their own direction and select **Apply**.
+   **Random event** sends one of 30 landscape directions to the active Orbis stream. The receipt names the selected event.
 3. Use **Mark change visible** once the requested change appears at its original landmark. For the river test, use **Open spillway** once **Block creek** has produced a visible diversion.
 4. Select **End stream** from the operator tab. Select **Download run** to save the observation time and available before-and-after frames.
 

@@ -13,9 +13,9 @@ cp .env.example .env.local
 
 Set `REACTOR_API_KEY` in `.env.local`, then run `pnpm dev` and open [the viewer](http://127.0.0.1:5173/). The starting frame is available before connecting to Reactor. Keep the key on the server in the local environment file.
 
-1. Select **Start stream** and wait for **Live**.
+1. Hover over the viewport to reveal the desktop controls. Select **Start stream** and wait for **Live**.
 2. Select **Present** and share the video-only window. Keep the original tab for directions and **History**.
-3. Try **Meteor impact**, **Random event**, or a typed direction. Use **End stream** when done.
+3. Try **Glacier retreat**, **Random event**, or a typed direction. Use **End stream** when done.
 
 When you see the requested change, select **Mark change visible**. Hover over **History** to see the exact direction alongside the available before and marked frames. **Download run** saves the frames and timing. The `/setup` route contains the separate Three.js terrain study. The optional `/starter` examples use Gemini or OpenAI keys. The live stage only needs Reactor.
 
