@@ -1,6 +1,6 @@
-# Present Patagonia Live
+# Present TerraDirect
 
-Open [Patagonia Live in Codex](http://127.0.0.1:5173/). **Satellite** opens on the starting landscape in **Orbis Dynamic** at **1080p**.
+Open [TerraDirect in Codex](http://127.0.0.1:5173/). **Satellite** opens on the starting landscape in **Orbis Dynamic** at **1080p**.
 
 ## Approved view
 
