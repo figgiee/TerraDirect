@@ -41,7 +41,7 @@ Stable made existing field boundaries clearer in the millennia rehearsal. The vi
 
 Use one landmark and one observable change. At the river bend, new field boundaries, groups of rooftops, and broad tree cover are easier to identify than the age of individual buildings.
 
-The year labels request a view that many years after the starting frame. **Slow**, **Fast**, and **Very fast** also send prompt directions. They set no simulation clock. **Tilt-shift** asks for a band of sharp focus through the settlement. Use [Terrain orbit](http://127.0.0.1:5173/?view=terrain) for the square tile.
+The year labels request a view that many years after the starting frame. Time-lapse directions use the default fast pace as prompt guidance. There is no simulation clock. **Tilt-shift** asks for a band of sharp focus through the settlement. Use [Terrain orbit](http://127.0.0.1:5173/?view=terrain) for the square tile.
 
 ## Rehearse against 45 points
 
@@ -59,6 +59,6 @@ This is an internal rehearsal rubric. Award up to three points per item from the
 | --- | --- | --- |
 | Real time | Dynamic played at 1080p. The meteor flash first appeared in the 9.05-second sample after a clear 8.05-second sample. The cue receipt arrived at 1.81 seconds. | Repeat the response with a judge choosing the cue. |
 | Creativity | The flash and dust plume were visible in the approved valley, with the glacier and bend still recognizable. The first random cue was sent successfully. | Show a visible second event or an era change in the same location. |
-| Functionality | The operator started and closed the live stream. Browser checks exercised random and typed directions, the 1080p presentation layout, and fullscreen recovery from a simulated capacity error. | Observe a first-time judge operating the controls and verify a visible pace change in live output. |
+| Functionality | The operator started and closed the live stream. Browser checks exercised random and typed directions, the 1080p presentation layout, and fullscreen recovery from a simulated capacity error. | Observe a first-time judge operating the controls. |
 
 The video fills the viewport with its full frame. Preview the composition and control size at the actual LED screen's aspect ratio before the presentation. For model access or startup issues, check the app's error message and the [Reactor session limits](https://docs.reactor.inc/resources/rate-limits).

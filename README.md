@@ -17,7 +17,7 @@ Set `REACTOR_API_KEY` in `.env.local`, then run `pnpm dev` and open [the viewer]
 2. Select **Present** and share the video-only window. Keep the original tab for directions and **History**.
 3. Try **Meteor impact**, **Random event**, or a typed direction. Use **End stream** when done.
 
-When you see the requested change, select **Mark change visible**. **History** shows the exact direction alongside the available before and marked frames. **Download run** saves the frames and timing. The `/setup` route contains the separate Three.js terrain study. The optional `/starter` examples use Gemini or OpenAI keys. The live stage only needs Reactor.
+When you see the requested change, select **Mark change visible**. Hover over **History** to see the exact direction alongside the available before and marked frames. **Download run** saves the frames and timing. The `/setup` route contains the separate Three.js terrain study. The optional `/starter` examples use Gemini or OpenAI keys. The live stage only needs Reactor.
 
 See the [presenter runbook](docs/demo.md) and [Orbis controls and limits](docs/orbis.md).
 

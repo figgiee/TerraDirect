@@ -6,6 +6,7 @@ import { type OrbisModel } from "@/lib/orbis";
 import { padTerrainSeed, satelliteEvents, stageViews, terrainSeedBackground, terrainSeedScale, timelinePaces, type StageView, type TimelinePace } from "@/lib/orbis-stage";
 
 const model = "dynamic";
+const defaultPace = "fast" satisfies TimelinePace;
 type Size = { width: number; height: number };
 type Direction = {
   label: string;
@@ -69,7 +70,6 @@ export default function OrbisStage() {
     const requested = new URLSearchParams(window.location.search).get("view");
     return requested && Object.hasOwn(stageViews, requested) ? requested as StageView : "satellite";
   });
-  const [pace, setPace] = useState<TimelinePace>("fast");
   const [presenting, setPresenting] = useState(false);
   const fullscreenRoot = useRef<HTMLDivElement>(null);
   const viewer = useRef<Window | null>(null);
@@ -143,23 +143,22 @@ export default function OrbisStage() {
 
   return <div ref={fullscreenRoot}>
     <OrbisDemo model={model} render={(session) => (
-      <Stage view={view} pace={pace} onPace={setPace}
+      <Stage view={view}
         session={session} presenting={presenting} present={present} closeViewer={closeViewer} />
     )} />
   </div>;
 }
 
-function Stage({ session, view, pace, onPace, presenting, present, closeViewer }: {
+function Stage({ session, view, presenting, present, closeViewer }: {
   session: OrbisSession;
   view: StageView;
-  pace: TimelinePace;
-  onPace: (pace: TimelinePace) => void;
   presenting: boolean;
   present: (noteActivity: () => void) => Promise<void>;
   closeViewer: () => void;
 }) {
   const stage = useRef<HTMLElement>(null);
   const [prompt, setPrompt] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [hasFrame, setHasFrame] = useState(false);
   const [pending, setPending] = useState(false);
   const [sendingDirection, setSendingDirection] = useState("");
@@ -244,7 +243,7 @@ function Stage({ session, view, pace, onPace, presenting, present, closeViewer }
     }
   }
 
-  async function steer(label: string, text: string, requestedPace = pace, clearDraft = false, instant = false) {
+  async function steer(label: string, text: string, { clearDraft = false, instant = false } = {}) {
     const direction = text.trim();
     if (!direction || !readyToSteer || actionInFlight.current) return false;
     actionInFlight.current = true;
@@ -258,13 +257,13 @@ function Stage({ session, view, pace, onPace, presenting, present, closeViewer }
     const sent = performance.now();
     const index = run?.directions.length ?? 0;
     const usePace = view === "satellite" && !instant;
-    const fullDirection = usePace ? direction + " " + timelinePaces[requestedPace].direction : direction;
+    const fullDirection = usePace ? direction + " " + timelinePaces[defaultPace].direction : direction;
     try {
       const accepted = await session.steer(fullDirection, true);
       const acknowledgmentMs = Math.round(performance.now() - sent);
       setRun((current) => current ? { ...current, directions: [
         ...current.directions, { label, text: fullDirection, at, chunk, videoSeconds, beforeFrame, accepted, acknowledgmentMs,
-          requestedPace: usePace ? requestedPace : undefined },
+          requestedPace: usePace ? defaultPace : undefined },
       ] } : null);
       if (accepted) {
         if (clearDraft) setPrompt("");
@@ -274,12 +273,6 @@ function Stage({ session, view, pace, onPace, presenting, present, closeViewer }
     } finally {
       actionInFlight.current = false;
       setSendingDirection("");
-    }
-  }
-
-  async function changePace(next: TimelinePace) {
-    if (next !== pace && (!session.runStarted || await steer(timelinePaces[next].label + " pace", "Continue the same changes in the same shot.", next))) {
-      onPace(next);
     }
   }
 
@@ -309,19 +302,19 @@ function Stage({ session, view, pace, onPace, presenting, present, closeViewer }
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    void steer("Custom direction", prompt, pace, true);
+    void steer("Custom direction", prompt, { clearDraft: true });
   };
   const status = session.runStarted
     ? session.paused ? "Paused" : hasFrame ? "Live" : "Waiting for video"
     : session.status === "waiting" ? "Waiting for Orbis"
       : session.status === "connecting" ? "Connecting"
-        : busy ? "Starting stream" : issue ? "Stream unavailable" : "Starting frame";
+        : busy ? "Starting stream" : issue ? "Stream unavailable" : "Scene preview";
   const lastDirection = run?.directions.at(-1);
 
   function sendRandomEvent() {
     const choices = satelliteEvents.filter(([label]) => label !== lastDirection?.label);
     const [label, event] = choices[Math.floor(Math.random() * choices.length)];
-    return steer(label, `${event} Hold the wide photoreal aerial view of the same valley.`, pace, false, true);
+    return steer(label, `${event} Hold the wide photoreal aerial view of the same valley.`, { instant: true });
   }
 
   return (
@@ -344,7 +337,6 @@ function Stage({ session, view, pace, onPace, presenting, present, closeViewer }
         <div className="stage-picture" style={wideSeed && !session.runStarted ? { backgroundColor: terrainSeedBackground } : undefined}>
           {session.runStarted ? <OrbisPlayer connected={session.connected} muted={session.muted} runStarted={session.runStarted} status={session.status} onSize={handleSize} onFirstFrame={handleFirstFrame} showStatus={false} /> : <>
             <img src={scene.frame} alt={scene.frameName} style={wideSeed ? { scale: terrainSeedScale } : undefined} />
-            {status !== "Starting frame" && <span className="stage-picture-label">Starting frame</span>}
           </>}
           {(busy && !session.runStarted || session.runStarted && !hasFrame) && <div className="stage-wait">
             <span className="stage-spinner" aria-hidden="true" />
@@ -353,9 +345,22 @@ function Stage({ session, view, pace, onPace, presenting, present, closeViewer }
         </div>
 
         <div className="stage-dock">
-          <details className="stage-history">
-            <summary>History{run?.directions.length ? <span className="stage-count">{run.directions.length}</span> : null}</summary>
-            <div className="stage-history-panel">
+          <div className="stage-history"
+            onPointerEnter={(event) => { if (event.pointerType === "mouse") setHistoryOpen(true); }}
+            onPointerLeave={(event) => { if (event.pointerType === "mouse") setHistoryOpen(false); }}
+            onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setHistoryOpen(false); }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && historyOpen) {
+                setHistoryOpen(false);
+                event.currentTarget.querySelector("button")?.focus();
+                event.stopPropagation();
+              }
+            }}>
+            <button type="button" aria-expanded={historyOpen} aria-controls="stage-prompt-history"
+              onClick={() => setHistoryOpen((open) => !open)}>
+              History{run?.directions.length ? <span className="stage-count">{run.directions.length}</span> : null}
+            </button>
+            <div id="stage-prompt-history" className="stage-history-panel" tabIndex={0} aria-label="Prompt history" hidden={!historyOpen}>
               {run ? <ol>
                 <li><strong>Opening prompt</strong><p>{run.opening}</p></li>
                 {run.directions.map((direction, index) => <li key={index}>
@@ -377,7 +382,7 @@ function Stage({ session, view, pace, onPace, presenting, present, closeViewer }
                 </li>)}
               </ol> : <p>Prompts appear here after you start a stream.</p>}
             </div>
-          </details>
+          </div>
           <form onSubmit={submit} className="stage-steer">
             <label htmlFor="stage-direction">{view === "satellite" ? "Direct the time-lapse" : "Direct the scene"}</label>
             <div className="stage-command">
@@ -390,7 +395,7 @@ function Stage({ session, view, pace, onPace, presenting, present, closeViewer }
           </form>
           <div className="stage-quick" aria-label="Scene directions">
             {view === "satellite" && <button type="button" className="stage-primary" disabled={!readyToSteer} onClick={() => void sendRandomEvent()}>Random event</button>}
-            {(view === "satellite" ? scene.directions.slice(0, 1) : scene.directions).map((direction) => <button type="button" key={direction.label} disabled={!readyToSteer} onClick={() => void steer(direction.label, direction.text, pace, false, "instant" in direction && direction.instant === true)}>{direction.label}</button>)}
+            {(view === "satellite" ? scene.directions.slice(0, 1) : scene.directions).map((direction) => <button type="button" key={direction.label} disabled={!readyToSteer} onClick={() => void steer(direction.label, direction.text, { instant: "instant" in direction && direction.instant === true })}>{direction.label}</button>)}
             {view === "satellite" && <select aria-label="More events" value="" disabled={!readyToSteer} onChange={(event) => {
               const direction = scene.directions.find(({ label }) => label === event.target.value);
               if (direction) void steer(direction.label, direction.text);
@@ -399,11 +404,6 @@ function Stage({ session, view, pace, onPace, presenting, present, closeViewer }
               {scene.directions.slice(1).map(({ label }) => <option key={label} value={label}>{label}</option>)}
             </select>}
           </div>
-          {view === "satellite" && <label className="stage-select stage-pace"><span>Pace</span>
-            <select aria-label="Timeline pace" value={pace} disabled={busy || session.runStarted && !readyToSteer} onChange={(event) => void changePace(event.target.value as TimelinePace)}>
-              {Object.entries(timelinePaces).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
-            </select>
-          </label>}
         </div>
 
         <div className="stage-foot">

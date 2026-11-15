@@ -81,17 +81,6 @@
 .orbis-stage .stage-stop { background: transparent; color: var(--error); border-color: color-mix(in srgb, var(--error) 45%, transparent); }
 .orbis-stage .stage-stop:hover:enabled { border-color: var(--error); }
 
-.orbis-stage .stage-select {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  font-size: inherit;
-  color: var(--secondary);
-  white-space: nowrap;
-}
-
-.stage-select span { padding: 0 0.15em; }
-
 .stage-monitor {
   min-width: 0;
   min-height: 0;
@@ -145,17 +134,6 @@
 
 .stage-picture .player video { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: 0; }
 .stage-picture .player > div { width: 100%; height: 100%; }
-.stage-picture-label {
-  position: absolute;
-  left: 0.8em;
-  bottom: 0.8em;
-  padding: 0.42em 0.68em;
-  border-radius: 5px;
-  border: 1px solid var(--border);
-  background: #0d1117f5;
-  color: var(--text);
-}
-
 .stage-wait {
   position: absolute;
   inset: 0;
@@ -224,21 +202,10 @@
 .stage-foot button:hover:enabled { background: none; color: var(--text); }
 
 .stage-history { position: relative; align-self: end; }
-.stage-history summary {
-  display: flex;
-  align-items: center;
-  min-height: var(--control-height);
-  padding-inline: 0.85em;
-  background: var(--control);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  font-weight: 600;
-  cursor: pointer;
-}
 .stage-history-panel {
   position: absolute;
   z-index: 2;
-  bottom: calc(100% + 10px);
+  bottom: 100%;
   left: 0;
   width: min(28rem, calc(100vw - 2 * var(--space)));
   max-height: min(60dvh, 30rem);
@@ -262,11 +229,7 @@
 }
 .orbis-stage.is-presenting .stage-monitor { display: block; height: 100%; border: 0; border-radius: 0; }
 .orbis-stage.is-presenting .stage-picture { height: 100%; aspect-ratio: auto; background: #000; }
-.orbis-stage.is-presenting :is(.stage-monitor-bar, .stage-dock, .stage-foot, .stage-wait, .stage-picture-label) { display: none; }
-
-@media (max-width: 1100px) {
-  .stage-select span { display: none; }
-}
+.orbis-stage.is-presenting :is(.stage-monitor-bar, .stage-dock, .stage-foot, .stage-wait) { display: none; }
 
 @media (max-width: 700px) {
   .orbis-stage {
@@ -285,8 +248,8 @@
 
 /* Keep the Bastion palette and use the scene as the backdrop for operator controls. */
 .orbis-stage {
-  --glass: linear-gradient(145deg, #30363db8, #0d1117e0);
-  --glass-border: #e6edf34a;
+  --glass: linear-gradient(145deg, #272d35f7, #0d1117fa);
+  --glass-border: #e6edf362;
   --glass-shadow: inset 0 1px 0 #e6edf339, 0 6px 22px #05080970;
   grid-template-rows: minmax(0, 1fr);
 }
@@ -327,8 +290,6 @@
 .stage-quick { grid-area: 1 / 1 / 2 / -1; justify-content: center; }
 .stage-history { grid-column: 1; }
 .stage-steer { grid-column: 2; }
-.stage-pace { grid-column: 3; }
-.stage-pace > span { display: none; }
 
 .orbis-stage .stage-steer label {
   position: absolute;
@@ -340,7 +301,6 @@
 }
 
 .orbis-stage .stage-monitor :is(button, select, input),
-.stage-history summary,
 .stage-state {
   border: 1px solid var(--glass-border);
   border-radius: 999px;
@@ -350,7 +310,8 @@
 }
 
 .stage-state { padding: 0.55em 0.85em; }
-.stage-history summary { gap: 0.5em; }
+.stage-history button { display: flex; align-items: center; gap: 0.5em; }
+.stage-history-panel:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
 .stage-count {
   padding: 0.18em 0.55em;
   border-radius: 999px;
@@ -358,11 +319,10 @@
   font-variant-numeric: tabular-nums;
 }
 .stage-history-panel {
-  bottom: calc(100% + 0.65em);
   width: min(34rem, calc(100vw - 2 * var(--space) - 2em));
   border-color: var(--glass-border);
   border-radius: 22px;
-  background: linear-gradient(145deg, #21262df2, #0d1117f2);
+  background: linear-gradient(145deg, #21262dfb, #0d1117fc);
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(24px) saturate(140%);
 }
@@ -375,7 +335,7 @@
 
 .orbis-stage .stage-monitor input::placeholder { color: #c6d0db; }
 .orbis-stage .stage-monitor .stage-primary {
-  background: linear-gradient(145deg, #0d8a8de8, #0a6b6eed);
+  background: linear-gradient(145deg, #0c777afa, #0a6265fa);
   color: #fff;
 }
 .orbis-stage .stage-monitor button:hover:enabled { background: #30363df0; }
@@ -405,14 +365,12 @@
 }
 .stage-foot .stage-problem { color: #ffb0ab; }
 .orbis-stage .stage-foot button { text-decoration: none; }
-.stage-picture-label { display: none; }
 
 @media (max-width: 700px) {
   .orbis-stage { height: 100dvh; min-height: 36rem; }
   .stage-picture { aspect-ratio: auto; }
   .stage-dock { grid-template-columns: auto 1fr auto; }
   .stage-steer { grid-area: 3 / 1 / 4 / -1; }
-  .stage-pace { justify-self: end; }
   .stage-monitor-bar { gap: 0.45em; }
   .stage-monitor-tools { margin-left: 0; }
   .stage-foot { top: calc(2 * var(--control-height) + 1.8em); }
