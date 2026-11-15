@@ -356,6 +356,13 @@
 }
 
 .stage-state { padding: 0.55em 0.85em; }
+.stage-video-clock {
+  padding-inline-start: 0.65em;
+  border-inline-start: 1px solid var(--glass-border);
+  color: #c6d0db;
+  font-variant-numeric: tabular-nums;
+}
+
 .stage-history button { display: flex; align-items: center; gap: 0.5em; }
 .stage-history-panel:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
 .stage-count {

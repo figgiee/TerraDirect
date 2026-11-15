@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import { OrbisDemo } from "@/components/orbis-demo";
 import { OrbisPlayer } from "@/components/orbis-player";
 import type { OrbisSession } from "@/hooks/use-orbis-session";
@@ -62,6 +62,29 @@ function connectionMessage(error: string) {
   if (/\b429\b/.test(error)) return "Reactor is limiting new streams. Wait before trying again.";
   if (/\b402\b/.test(error)) return "The Reactor account needs credits to start a stream.";
   return error;
+}
+
+function StageVideoClock({ stage }: { stage: RefObject<HTMLElement | null> }) {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const viewport = stage.current;
+    if (!viewport) return;
+    const reportTime = (video: HTMLVideoElement) => {
+      if (Number.isFinite(video.currentTime)) setSeconds(Math.floor(video.currentTime));
+    };
+    const video = viewport.querySelector<HTMLVideoElement>(".stage-picture video");
+    if (video) reportTime(video);
+    const update = (event: Event) => {
+      if (event.target instanceof HTMLVideoElement) reportTime(event.target);
+    };
+    viewport.addEventListener("timeupdate", update, true);
+    return () => viewport.removeEventListener("timeupdate", update, true);
+  }, [stage]);
+
+  const minutes = Math.floor(seconds / 60);
+  const remainder = String(seconds % 60).padStart(2, "0");
+  return <time className="stage-video-clock" aria-label="Elapsed video time" dateTime={`PT${seconds}S`}>{minutes}:{remainder}</time>;
 }
 
 export default function OrbisStage() {
@@ -349,8 +372,10 @@ function Stage({ session, view, model, onModelChange, presenting, present, close
     <main className={presenting ? "orbis-stage is-presenting" : "orbis-stage"} ref={stage}>
       <section className="stage-monitor" aria-label="Orbis viewport">
         <div className="stage-monitor-bar">
-          <span className="stage-state" data-state={session.runStarted && hasFrame && !session.paused ? "live" : issue ? "error" : busy || session.runStarted && !hasFrame ? "busy" : "idle"} role="status">
-            <span className="stage-light" aria-hidden="true" />{status}
+          <span className="stage-state" data-state={session.runStarted && hasFrame && !session.paused ? "live" : issue ? "error" : busy || session.runStarted && !hasFrame ? "busy" : "idle"}>
+            <span className="stage-light" aria-hidden="true" />
+            <span role="status">{status}</span>
+            {session.runStarted && hasFrame && <StageVideoClock stage={stage} />}
           </span>
           <div className="stage-monitor-tools">
             {(!session.runStarted || !hasFrame) && <div className="stage-model-toggle" role="radiogroup" aria-label="Orbis model" data-model={model}>
