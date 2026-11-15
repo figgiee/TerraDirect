@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { getRequestListener } from "@hono/node-server";
 import react from "@vitejs/plugin-react";
@@ -7,6 +8,18 @@ import { api } from "./server/api.ts";
 export default defineConfig({
   plugins: [
     react(),
+    {
+      name: "reactor-sdk-wasm",
+      apply: "build",
+      async generateBundle() {
+        // The SDK runtime import resolves relative to the built JavaScript chunk.
+        const sdk = import.meta.resolve("@reactor-team/js-sdk");
+        for (const name of ["reactor_wasm.js", "reactor_wasm_bg.wasm"]) {
+          const source = await readFile(new URL("./wasm/" + name, sdk));
+          this.emitFile({ type: "asset", fileName: "assets/wasm/" + name, source });
+        }
+      },
+    },
     {
       name: "patagonia-api",
       configureServer(server) {

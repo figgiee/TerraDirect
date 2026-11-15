@@ -11,7 +11,10 @@ app.route("/", api);
 app.use("/assets/*", serveStatic({
   root,
   onFound: (_, context) => {
-    context.header("Cache-Control", "public, max-age=31536000, immutable");
+    const assetCache = context.req.path.startsWith("/assets/wasm/")
+      ? "no-cache"
+      : "public, max-age=31536000, immutable";
+    context.header("Cache-Control", assetCache);
   },
 }));
 app.get("/starter", serveStatic({ root, path: "index.html" }));

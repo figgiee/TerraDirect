@@ -351,58 +351,71 @@ function Stage({ session, view, pace, onPace, presenting, present, closeViewer }
             <strong>{status}…</strong>
           </div>}
         </div>
-      </section>
 
-      <div className="stage-dock">
-        <details className="stage-history">
-          <summary>History{run?.directions.length ? ` (${run.directions.length})` : ""}</summary>
-          <div className="stage-history-panel">
-            {run ? <ol>
-              <li><strong>Opening prompt</strong><p>{run.opening}</p></li>
-              {run.directions.map((direction, index) => <li key={index}>
-                <strong>{direction.label}</strong>
-                <small>{direction.accepted ? "Sent" : "Failed"}</small>
-                <p>{direction.text}</p>
-              </li>)}
-            </ol> : <p>Prompts appear here after you start a stream.</p>}
+        <div className="stage-dock">
+          <details className="stage-history">
+            <summary>History{run?.directions.length ? <span className="stage-count">{run.directions.length}</span> : null}</summary>
+            <div className="stage-history-panel">
+              {run ? <ol>
+                <li><strong>Opening prompt</strong><p>{run.opening}</p></li>
+                {run.directions.map((direction, index) => <li key={index}>
+                  <strong>{direction.label}</strong>
+                  <small>{direction.visibleMs !== undefined
+                    ? `Marked visible · ${(direction.visibleMs / 1000).toFixed(1)} s`
+                    : direction.accepted ? "Sent" : "Failed"}</small>
+                  <p>{direction.text}</p>
+                  {(direction.beforeFrame || direction.visibleFrame) && <div className="stage-history-frames">
+                    {direction.beforeFrame && <figure>
+                      <img src={direction.beforeFrame} alt="Valley before this prompt was sent" />
+                      <figcaption>Before</figcaption>
+                    </figure>}
+                    {direction.visibleFrame && <figure>
+                      <img src={direction.visibleFrame} alt="Valley when the operator marked the change visible" />
+                      <figcaption>Marked visible</figcaption>
+                    </figure>}
+                  </div>}
+                </li>)}
+              </ol> : <p>Prompts appear here after you start a stream.</p>}
+            </div>
+          </details>
+          <form onSubmit={submit} className="stage-steer">
+            <label htmlFor="stage-direction">{view === "satellite" ? "Direct the time-lapse" : "Direct the scene"}</label>
+            <div className="stage-command">
+              <input id="stage-direction" value={prompt} placeholder="Describe a change" disabled={!session.runStarted} onChange={(event) => {
+                setPrompt(event.target.value);
+                session.noteActivity();
+              }} />
+              <button type="submit" className={session.runStarted ? "stage-primary" : ""} disabled={!readyToSteer || !prompt.trim()}>Apply</button>
+            </div>
+          </form>
+          <div className="stage-quick" aria-label="Scene directions">
+            {view === "satellite" && <button type="button" className="stage-primary" disabled={!readyToSteer} onClick={() => void sendRandomEvent()}>Random event</button>}
+            {(view === "satellite" ? scene.directions.slice(0, 1) : scene.directions).map((direction) => <button type="button" key={direction.label} disabled={!readyToSteer} onClick={() => void steer(direction.label, direction.text, pace, false, "instant" in direction && direction.instant === true)}>{direction.label}</button>)}
+            {view === "satellite" && <select aria-label="More events" value="" disabled={!readyToSteer} onChange={(event) => {
+              const direction = scene.directions.find(({ label }) => label === event.target.value);
+              if (direction) void steer(direction.label, direction.text);
+            }}>
+              <option value="" disabled>More events</option>
+              {scene.directions.slice(1).map(({ label }) => <option key={label} value={label}>{label}</option>)}
+            </select>}
           </div>
-        </details>
-        <form onSubmit={submit} className="stage-steer">
-          <label htmlFor="stage-direction">{view === "satellite" ? "Direct the time-lapse" : "Direct the scene"}</label>
-          <div className="stage-command">
-            <input id="stage-direction" value={prompt} placeholder="Describe a change" disabled={!session.runStarted} onChange={(event) => {
-              setPrompt(event.target.value);
-              session.noteActivity();
-            }} />
-            <button type="submit" className={session.runStarted ? "stage-primary" : ""} disabled={!readyToSteer || !prompt.trim()}>Apply</button>
-          </div>
-        </form>
-        <div className="stage-quick" aria-label="Scene directions">
-          {view === "satellite" && <button type="button" className="stage-primary" disabled={!readyToSteer} onClick={() => void sendRandomEvent()}>Random event</button>}
-          {(view === "satellite" ? scene.directions.slice(0, 1) : scene.directions).map((direction) => <button type="button" key={direction.label} disabled={!readyToSteer} onClick={() => void steer(direction.label, direction.text, pace, false, "instant" in direction && direction.instant === true)}>{direction.label}</button>)}
-          {view === "satellite" && <select aria-label="More events" value="" disabled={!readyToSteer} onChange={(event) => {
-            const direction = scene.directions.find(({ label }) => label === event.target.value);
-            if (direction) void steer(direction.label, direction.text);
-          }}>
-            <option value="" disabled>More events</option>
-            {scene.directions.slice(1).map(({ label }) => <option key={label} value={label}>{label}</option>)}
-          </select>}
+          {view === "satellite" && <label className="stage-select stage-pace"><span>Pace</span>
+            <select aria-label="Timeline pace" value={pace} disabled={busy || session.runStarted && !readyToSteer} onChange={(event) => void changePace(event.target.value as TimelinePace)}>
+              {Object.entries(timelinePaces).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </label>}
         </div>
-        {view === "satellite" && <label className="stage-select stage-pace"><span>Pace</span>
-          <select aria-label="Timeline pace" value={pace} disabled={busy || session.runStarted && !readyToSteer} onChange={(event) => void changePace(event.target.value as TimelinePace)}>
-            {Object.entries(timelinePaces).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
-          </select>
-        </label>}
-      </div>
 
-      <div className="stage-foot">
-        {issue ? <p className="stage-problem" role="alert">{issue}</p>
-          : session.sessionNotice ? <p role="status">{session.sessionNotice}</p>
-          : receipt ? <><p role="status">{receipt.label} sent</p><button type="button" onClick={markVisible}>Mark change visible</button></>
-            : session.runStarted && lastDirection?.visibleMs !== undefined ? <p role="status">{lastDirection.label} marked visible</p>
-              : sendingDirection ? <p role="status">Sending {sendingDirection}…</p> : null}
-        {!presenting && run && !busy && <button type="button" onClick={exportRun}>Download run</button>}
-      </div>
+        <div className="stage-foot">
+          {issue ? <p className="stage-problem" role="alert">{issue}</p>
+            : session.sessionNotice ? <p role="status">{session.sessionNotice}</p>
+            : receipt ? <p role="status">{receipt.label} sent</p>
+              : session.runStarted && lastDirection?.visibleMs !== undefined ? <p role="status">{lastDirection.label} marked visible</p>
+                : sendingDirection ? <p role="status">Sending {sendingDirection}…</p> : null}
+          {receipt && <button type="button" onClick={markVisible}>Mark change visible</button>}
+          {!presenting && run && !busy && <button type="button" onClick={exportRun}>Download run</button>}
+        </div>
+      </section>
     </main>
   );
 }

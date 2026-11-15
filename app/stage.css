@@ -282,3 +282,139 @@
 @media (prefers-reduced-motion: reduce) {
   .stage-spinner { animation: none; }
 }
+
+/* Keep the Bastion palette and use the scene as the backdrop for operator controls. */
+.orbis-stage {
+  --glass: linear-gradient(145deg, #30363db8, #0d1117e0);
+  --glass-border: #e6edf34a;
+  --glass-shadow: inset 0 1px 0 #e6edf339, 0 6px 22px #05080970;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.stage-monitor {
+  position: relative;
+  isolation: isolate;
+  grid-template-rows: minmax(0, 1fr);
+  border-radius: 24px;
+}
+
+.stage-monitor-bar {
+  position: absolute;
+  z-index: 2;
+  inset: 0 0 auto;
+  padding: 0.85em;
+  min-height: 0;
+  border: 0;
+  background: none;
+  pointer-events: none;
+}
+
+.stage-monitor-bar > * { pointer-events: auto; }
+
+.stage-dock {
+  position: absolute;
+  z-index: 3;
+  inset: auto 0.85em 0.85em;
+  display: grid;
+  grid-template-columns: auto minmax(0, 32rem) auto;
+  justify-content: space-between;
+  align-items: end;
+  gap: 0.65em;
+  pointer-events: none;
+}
+
+.stage-dock > * { pointer-events: auto; }
+.stage-quick { grid-area: 1 / 1 / 2 / -1; justify-content: center; }
+.stage-history { grid-column: 1; }
+.stage-steer { grid-column: 2; }
+.stage-pace { grid-column: 3; }
+.stage-pace > span { display: none; }
+
+.orbis-stage .stage-steer label {
+  position: absolute;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.orbis-stage .stage-monitor :is(button, select, input),
+.stage-history summary,
+.stage-state {
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+.stage-state { padding: 0.55em 0.85em; }
+.stage-history summary { gap: 0.5em; }
+.stage-count {
+  padding: 0.18em 0.55em;
+  border-radius: 999px;
+  background: #e6edf326;
+  font-variant-numeric: tabular-nums;
+}
+.stage-history-panel {
+  bottom: calc(100% + 0.65em);
+  width: min(34rem, calc(100vw - 2 * var(--space) - 2em));
+  border-color: var(--glass-border);
+  border-radius: 22px;
+  background: linear-gradient(145deg, #21262df2, #0d1117f2);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+.stage-history-panel li + li { border-top: 1px solid var(--glass-border); padding-top: 0.7em; }
+.stage-history-panel p { color: var(--text); }
+.stage-history-panel small, .stage-history-frames figcaption { color: #c6d0db; }
+.stage-history-frames { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55em; margin-bottom: 0.85em; }
+.stage-history-frames figure { margin: 0; }
+.stage-history-frames img { display: block; width: 100%; border-radius: 8px; margin-bottom: 0.25em; }
+
+.orbis-stage .stage-monitor input::placeholder { color: #c6d0db; }
+.orbis-stage .stage-monitor .stage-primary {
+  background: linear-gradient(145deg, #0d8a8de8, #0a6b6eed);
+  color: #fff;
+}
+.orbis-stage .stage-monitor button:hover:enabled { background: #30363df0; }
+.orbis-stage .stage-monitor button:active:enabled { box-shadow: inset 0 2px 8px #050809aa; }
+.orbis-stage .stage-monitor .stage-primary:hover:enabled { background: var(--teal-hover); }
+.orbis-stage .stage-monitor .stage-stop { color: #ffb0ab; }
+
+.stage-foot {
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--control-height) + 1.5em);
+  left: 0.85em;
+  right: 0.85em;
+  gap: 0.45em;
+  pointer-events: none;
+}
+.stage-foot p, .orbis-stage .stage-foot button {
+  margin: 0;
+  padding: 0.5em 0.85em;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--text);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(18px);
+  pointer-events: auto;
+}
+.stage-foot .stage-problem { color: #ffb0ab; }
+.orbis-stage .stage-foot button { text-decoration: none; }
+.stage-picture-label { display: none; }
+
+@media (max-width: 700px) {
+  .orbis-stage { height: 100dvh; min-height: 36rem; }
+  .stage-picture { aspect-ratio: auto; }
+  .stage-dock { grid-template-columns: auto 1fr auto; }
+  .stage-steer { grid-area: 3 / 1 / 4 / -1; }
+  .stage-pace { justify-self: end; }
+  .stage-monitor-bar { gap: 0.45em; }
+  .stage-monitor-tools { margin-left: 0; }
+  .stage-foot { top: calc(2 * var(--control-height) + 1.8em); }
+  .stage-history-panel { max-height: min(45dvh, 30rem); }
+}
