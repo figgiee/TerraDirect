@@ -1,6 +1,6 @@
 # Live Terrain Director
 
-Direct a recognizable aerial landscape during a live Orbis stream. Trigger an event or type a direction, then open a clean audience viewer while the operator keeps the controls and prompt history. The live stage defaults to Orbis Dynamic at 1080p. If Dynamic is unavailable, select **Use Stable**, then **Start Stable** to start a fresh stream from the same reference image.
+Direct a recognizable aerial landscape during a live Orbis stream. Trigger an event or type a direction, then open a clean audience viewer while the operator keeps the controls and prompt history. The live stage defaults to Orbis Dynamic at 1080p. If Dynamic is unavailable, select **Stable**, then **Start stream** to start a fresh stream from the same reference image.
 
 ## Run locally
 

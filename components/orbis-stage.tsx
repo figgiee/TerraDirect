@@ -72,6 +72,7 @@ export default function OrbisStage() {
   const [model, setModel] = useState<OrbisModel>("dynamic");
   const [presenting, setPresenting] = useState(false);
   const fullscreenRoot = useRef<HTMLDivElement>(null);
+  const restoreModelFocus = useRef(false);
   const viewer = useRef<Window | null>(null);
   const viewerTimer = useRef<number | undefined>(undefined);
 
@@ -92,6 +93,17 @@ export default function OrbisStage() {
     window.clearInterval(viewerTimer.current);
     viewer.current?.close();
   }, []);
+
+  useEffect(() => {
+    if (!restoreModelFocus.current) return;
+    restoreModelFocus.current = false;
+    fullscreenRoot.current?.querySelector<HTMLInputElement>('.stage-model-toggle input:checked')?.focus();
+  }, [model]);
+
+  function changeModel(next: OrbisModel) {
+    restoreModelFocus.current = true;
+    setModel(next);
+  }
 
   async function present(noteActivity: () => void) {
     noteActivity();
@@ -143,7 +155,7 @@ export default function OrbisStage() {
 
   return <div ref={fullscreenRoot}>
     <OrbisDemo model={model} render={(session) => (
-      <Stage view={view} model={model} onModelChange={setModel}
+      <Stage view={view} model={model} onModelChange={changeModel}
         session={session} presenting={presenting} present={present} closeViewer={closeViewer} />
     )} />
   </div>;
@@ -341,10 +353,19 @@ function Stage({ session, view, model, onModelChange, presenting, present, close
             <span className="stage-light" aria-hidden="true" />{status}
           </span>
           <div className="stage-monitor-tools">
-            {!session.runStarted && <button className="stage-primary" type="button" disabled={busy} onClick={() => void start()}>{model === "stable" ? "Start Stable" : "Start stream"}</button>}
-            {(!session.runStarted || !hasFrame) && <button type="button" disabled={busy} onClick={() => void switchModel()}>
-              {model === "dynamic" ? "Use Stable" : "Use Dynamic"}
-            </button>}
+            {(!session.runStarted || !hasFrame) && <div className="stage-model-toggle" role="radiogroup" aria-label="Orbis model" data-model={model}>
+              <label>
+                <input type="radio" name="stage-model" value="dynamic" checked={model === "dynamic"} disabled={busy}
+                  onChange={() => void switchModel()} />
+                <span>Dynamic</span>
+              </label>
+              <label>
+                <input type="radio" name="stage-model" value="stable" checked={model === "stable"} disabled={busy}
+                  onChange={() => void switchModel()} />
+                <span>Stable</span>
+              </label>
+            </div>}
+            {!session.runStarted && <button className="stage-primary" type="button" disabled={busy} onClick={() => void start()}>Start stream</button>}
             {session.runStarted && <div className="stage-transport" aria-label="Stream controls">
               <button type="button" disabled={busy || !hasFrame} onClick={() => void (session.paused ? session.resume() : session.pause())}>{session.paused ? "Resume" : "Pause"}</button>
               <button type="button" aria-pressed={!session.muted} onClick={session.toggleMuted}>{session.muted ? "Enable sound" : "Mute"}</button>

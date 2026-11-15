@@ -299,6 +299,62 @@
   backdrop-filter: blur(18px) saturate(145%);
 }
 
+.stage-model-toggle {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  min-height: var(--control-height);
+  padding: 3px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass);
+  box-shadow: var(--glass-shadow);
+  isolation: isolate;
+}
+
+.stage-model-toggle::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 3px auto 3px 3px;
+  width: calc((100% - 6px) / 2);
+  border-radius: inherit;
+  background: #285f64;
+  transition: transform 150ms ease-out;
+}
+
+.stage-model-toggle[data-model="stable"]::before { transform: translateX(100%); }
+
+.stage-model-toggle label {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0 0.75em;
+  border-radius: 999px;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stage-model-toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  clip-path: inset(50%);
+}
+
+.stage-model-toggle label:has(input:focus-visible) { outline: 3px solid var(--teal); }
+.stage-model-toggle label:has(input:disabled) { cursor: default; opacity: 0.65; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-model-toggle::before { transition: none; }
+}
+
 .stage-state { padding: 0.55em 0.85em; }
 .stage-history button { display: flex; align-items: center; gap: 0.5em; }
 .stage-history-panel:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
