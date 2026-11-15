@@ -1,14 +1,10 @@
-import { NextResponse } from "next/server";
-
+import { isOrbisModelName } from "../../lib/orbis.js";
 import {
   registerReactorSession,
   unregisterReactorSession,
-} from "@/lib/server/reactor-session-registry";
-
-export const runtime = "nodejs";
+} from "../reactor-session-registry.js";
 
 const REACTOR_API_URL = "https://api.reactor.inc";
-const MODEL_NAME = "reactor/visko-orbis-stable";
 
 type RegistryRequest = {
   sessionId?: unknown;
@@ -16,7 +12,7 @@ type RegistryRequest = {
 };
 
 function unavailableInProduction() {
-  return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return Response.json({ error: "Not found" }, { status: 404 });
 }
 
 export async function POST(request: Request) {
@@ -28,7 +24,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as RegistryRequest;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const { sessionId, jwt } = body;
@@ -40,7 +36,7 @@ export async function POST(request: Request) {
     !jwt ||
     jwt.length > 16_384
   ) {
-    return NextResponse.json(
+    return Response.json(
       { error: "A valid sessionId and JWT are required" },
       { status: 400 },
     );
@@ -57,14 +53,14 @@ export async function POST(request: Request) {
       },
     );
   } catch {
-    return NextResponse.json(
+    return Response.json(
       { error: "Could not verify Reactor session" },
       { status: 502 },
     );
   }
 
   if (!response.ok) {
-    return NextResponse.json(
+    return Response.json(
       { error: "Reactor session verification failed" },
       { status: response.status },
     );
@@ -78,19 +74,19 @@ export async function POST(request: Request) {
   const sessionModel =
     typeof session.model === "string" ? session.model : session.model?.name;
   if (
-    sessionModel !== MODEL_NAME ||
+    !isOrbisModelName(sessionModel) ||
     session.closed === true ||
     session.state?.toUpperCase() === "CLOSED"
   ) {
-    return NextResponse.json(
-      { error: "Session is not an active Orbis Stable session" },
+    return Response.json(
+      { error: "The session is closed or uses an unsupported model" },
       { status: 400 },
     );
   }
 
   await registerReactorSession({
     sessionId,
-    model: MODEL_NAME,
+    model: sessionModel,
     registeredAt: new Date().toISOString(),
   });
   return new Response(null, { status: 204 });
@@ -105,11 +101,11 @@ export async function DELETE(request: Request) {
   try {
     body = (await request.json()) as RegistryRequest;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   if (typeof body.sessionId !== "string" || !body.sessionId) {
-    return NextResponse.json(
+    return Response.json(
       { error: "A sessionId is required" },
       { status: 400 },
     );

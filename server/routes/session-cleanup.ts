@@ -1,8 +1,4 @@
-import { NextResponse } from "next/server";
-
-import { unregisterReactorSession } from "@/lib/server/reactor-session-registry";
-
-export const runtime = "nodejs";
+import { unregisterReactorSession } from "../reactor-session-registry.js";
 
 const REACTOR_API_URL = "https://api.reactor.inc";
 
@@ -16,7 +12,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as CleanupRequest;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const { sessionId, jwt } = body;
@@ -28,7 +24,7 @@ export async function POST(request: Request) {
     !jwt ||
     jwt.length > 16_384
   ) {
-    return NextResponse.json(
+    return Response.json(
       { error: "A valid sessionId and JWT are required" },
       { status: 400 },
     );
@@ -45,7 +41,7 @@ export async function POST(request: Request) {
       },
     );
   } catch {
-    return NextResponse.json(
+    return Response.json(
       { error: "Could not reach Reactor for session cleanup" },
       { status: 502 },
     );
@@ -59,7 +55,7 @@ export async function POST(request: Request) {
     return new Response(null, { status: 204 });
   }
 
-  return NextResponse.json(
+  return Response.json(
     { error: "Reactor session cleanup failed" },
     { status: response.status },
   );

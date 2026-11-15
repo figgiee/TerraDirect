@@ -3,6 +3,8 @@
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   background: #0a0a0b;
   color: #f6f4ed;
+  --font-geist-sans: "Geist Variable";
+  --font-geist-mono: "Geist Mono Variable";
 }
 
 * {

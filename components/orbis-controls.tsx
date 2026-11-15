@@ -61,7 +61,7 @@ export function OrbisControls({ session }: { session: OrbisSession }) {
               value={session.resolution}
               onChange={(event) => session.setResolution(event.target.value)}
             >
-              <option value="">Model setting (2k default)</option>
+              <option value="">Model setting</option>
               {session.availableResolutions.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -99,7 +99,7 @@ export function OrbisControls({ session }: { session: OrbisSession }) {
           disabled={
             !session.connected || !session.runStarted || session.controlsBusy
           }
-          onClick={session.steer}
+          onClick={() => void session.steer()}
         >
           Steer current run
         </button>

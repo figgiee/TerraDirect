@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import dogImage from "@/dog.png";
@@ -48,7 +47,7 @@ export function NanoBananaExample({
     setError("");
     setGroundedPrompt("");
     try {
-      const sourceResponse = await fetch(dogImage.src);
+      const sourceResponse = await fetch(dogImage);
       if (!sourceResponse.ok) throw new Error("Could not load dog.png");
 
       const formData = new FormData();
@@ -110,11 +109,9 @@ export function NanoBananaExample({
         <div className="nano-preview-grid">
           <figure className="nano-preview">
             <div className="nano-image-frame">
-              <Image
+              <img
                 src={dogImage}
                 alt="Golden retriever source image"
-                fill
-                sizes="(max-width: 800px) 100vw, 50vw"
               />
             </div>
             <figcaption>Source: dog.png</figcaption>

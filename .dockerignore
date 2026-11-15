@@ -1,0 +1,8 @@
+.git
+.env*
+.next
+dist
+node_modules
+.playwright-mcp
+.reactor-dev-sessions.json*
+*.tsbuildinfo

@@ -1,38 +1,18 @@
-import { spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { createRequire } from "node:module";
+import { loadEnvFile } from "node:process";
+import { createServer } from "vite";
 
-import nextEnv from "@next/env";
-
-const { loadEnvConfig } = nextEnv;
-const require = createRequire(import.meta.url);
 const projectDirectory = process.cwd();
 const registryPath = path.join(projectDirectory, ".reactor-dev-sessions.json");
 const reactorApiUrl = "https://api.reactor.inc";
-const orbisModel = "reactor/visko-orbis-stable";
+const orbisModels = new Set(["reactor/visko-orbis-stable", "reactor/visko-orbis-dynamic"]);
 
-loadEnvConfig(projectDirectory);
-
-async function findActiveDevServer() {
-  try {
-    const lock = JSON.parse(
-      await fs.readFile(path.join(projectDirectory, ".next/dev/lock"), "utf8"),
-    );
-    if (!Number.isInteger(lock.pid) || lock.pid <= 0) return undefined;
-    try {
-      process.kill(lock.pid, 0);
-      return lock;
-    } catch (error) {
-      if (error?.code === "ESRCH") return undefined;
-      throw error;
-    }
-  } catch (error) {
-    if (error?.code === "ENOENT" || error instanceof SyntaxError) {
-      return undefined;
-    }
-    throw error;
-  }
+process.env.NODE_ENV = "development";
+try {
+  loadEnvFile(".env.local");
+} catch (error) {
+  if (error?.code !== "ENOENT") throw error;
 }
 
 async function readRegistry() {
@@ -45,7 +25,7 @@ async function readRegistry() {
         (session) =>
           session &&
           typeof session.sessionId === "string" &&
-          session.model === orbisModel &&
+          orbisModels.has(session.model) &&
           typeof session.registeredAt === "string",
       )
     ) {
@@ -117,39 +97,47 @@ async function cleanupTrackedSessions(reason) {
   }
 }
 
+let ready = false;
+const server = await createServer({
+  mode: "development",
+  plugins: [{
+    name: "patagonia-session-startup",
+    enforce: "pre",
+    configureServer(vite) {
+      vite.middlewares.use((request, response, next) => {
+        if (!ready && request.url?.startsWith("/api/")) {
+          response.writeHead(503, { "Content-Type": "application/json" });
+          response.end(JSON.stringify({ error: "Reactor session cleanup in progress" }));
+          return;
+        }
+        next();
+      });
+    },
+  }],
+});
 try {
-  const activeServer = await findActiveDevServer();
-  if (activeServer) {
-    throw new Error(
-      `Another Next.js dev server is already running (PID ${activeServer.pid}, ${activeServer.appUrl ?? "URL unknown"}); refusing to clean its sessions`,
-    );
-  }
+  // Reserve the development port before sweeping this checkout's sessions.
+  await server.listen();
   await cleanupTrackedSessions("startup sweep");
+  ready = true;
 } catch (error) {
   console.error(
     `[reactor-cleanup] ${error instanceof Error ? error.message : String(error)}`,
   );
+  await server.close();
   process.exit(1);
 }
-
-const nextBin = require.resolve("next/dist/bin/next");
-const child = spawn(process.execPath, [nextBin, "dev", ...process.argv.slice(2)], {
-  cwd: projectDirectory,
-  env: process.env,
-  stdio: "inherit",
-});
+server.printUrls();
 
 let shuttingDown = false;
 
-async function shutdown(signal, exitCode) {
+async function shutdown(exitCode) {
   if (shuttingDown) return;
   shuttingDown = true;
-
-  if (signal && child.exitCode === null && child.signalCode === null) {
-    child.kill(signal);
-  }
+  ready = false;
 
   try {
+    await server.close();
     await cleanupTrackedSessions("shutdown sweep");
   } catch (error) {
     console.error(
@@ -160,9 +148,5 @@ async function shutdown(signal, exitCode) {
   process.exit(exitCode);
 }
 
-process.once("SIGINT", () => void shutdown("SIGINT", 130));
-process.once("SIGTERM", () => void shutdown("SIGTERM", 143));
-child.once("exit", (code, signal) => {
-  const exitCode = code ?? (signal === "SIGINT" ? 130 : 1);
-  void shutdown(undefined, exitCode);
-});
+process.once("SIGINT", () => void shutdown(130));
+process.once("SIGTERM", () => void shutdown(143));

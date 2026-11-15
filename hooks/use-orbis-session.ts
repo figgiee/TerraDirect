@@ -4,14 +4,17 @@ import { useReactor, useReactorMessage } from "@reactor-team/js-sdk";
 import { useEffect, useRef, useState } from "react";
 
 import {
+  DEFAULT_ORBIS_RESOLUTION,
   DOCUMENTED_RESOLUTIONS,
   type OrbisMessage,
+  type OrbisModel,
   unwrapOrbisMessage,
 } from "@/lib/orbis";
 
 export function useOrbisSession(
   clearJwt: () => void,
   getCurrentJwt: () => string | null,
+  model: OrbisModel,
 ) {
   const { status, sessionId, connect, disconnect, sendCommand, uploadFile } =
     useReactor((state) => ({
@@ -25,10 +28,13 @@ export function useOrbisSession(
 
   const [prompt, setPrompt] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [resolution, setResolution] = useState("");
+  const [resolutionPreference, setResolution] = useState(DEFAULT_ORBIS_RESOLUTION);
   const [availableResolutions, setAvailableResolutions] = useState<string[]>(
     DOCUMENTED_RESOLUTIONS,
   );
+  const selectAvailableResolution = (tiers: string[]) =>
+    tiers.find((tier) => tier.toLowerCase() === resolutionPreference.toLowerCase()) ?? "";
+  const resolution = selectAvailableResolution(availableResolutions);
   const [muted, setMuted] = useState(true);
   const [busy, setBusy] = useState(false);
   const [nanoBusy, setNanoBusy] = useState(false);
@@ -37,12 +43,21 @@ export function useOrbisSession(
   const [imageStatus, setImageStatus] = useState("");
   const [error, setError] = useState("");
   const [events, setEvents] = useState<string[]>([]);
+  const [chunks, setChunks] = useState(0);
+  const [activity, setActivity] = useState(0);
+  const [sessionNotice, setSessionNotice] = useState("");
+  const [generation, setGeneration] = useState<OrbisMessage | null>(null);
+  const [delivered, setDelivered] = useState<string | null>(null);
+  const [liveResolutionSwitching, setLiveResolutionSwitching] = useState(false);
 
+  const inFlight = useRef(false);
   const previousStatus = useRef(status);
   const disconnecting = useRef(false);
   const conditionsReadyResolver = useRef<(() => void) | null>(null);
   const imageReadyResolver = useRef<(() => void) | null>(null);
   const expectsImageForRun = useRef(false);
+  const startedResolver = useRef<(() => void) | null>(null);
+  const offeredResolutions = useRef(DOCUMENTED_RESOLUTIONS);
 
   const connected = status === "ready";
   const controlsBusy = busy || nanoBusy;
@@ -54,10 +69,17 @@ export function useOrbisSession(
     ) {
       setRunStarted(false);
       setPaused(false);
+      setChunks(0);
       setImageStatus("");
+      setGeneration(null);
+      setDelivered(null);
+      setLiveResolutionSwitching(false);
+      clearJwt();
+      offeredResolutions.current = DOCUMENTED_RESOLUTIONS;
+      setAvailableResolutions(DOCUMENTED_RESOLUTIONS);
     }
     previousStatus.current = status;
-  }, [status]);
+  }, [status, clearJwt]);
 
   useEffect(() => {
     const handlePageHide = (event: PageTransitionEvent) => {
@@ -85,7 +107,7 @@ export function useOrbisSession(
   }, [getCurrentJwt, sessionId]);
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== "development" || !sessionId) {
+    if (!import.meta.env.DEV || !sessionId) {
       return;
     }
 
@@ -135,6 +157,9 @@ export function useOrbisSession(
   }, [getCurrentJwt, sessionId]);
 
   const runAction = async (action: () => Promise<unknown>) => {
+    if (inFlight.current) return false;
+    inFlight.current = true;
+    setActivity((value) => value + 1);
     setBusy(true);
     setError("");
     try {
@@ -144,16 +169,21 @@ export function useOrbisSession(
       setError(caught instanceof Error ? caught.message : String(caught));
       return false;
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   };
 
   const updateRunState = (message: OrbisMessage) => {
     if (message.type === "state") {
+      if (typeof message.live_resolution_switching === "boolean") {
+        setLiveResolutionSwitching(message.live_resolution_switching);
+      }
       if (typeof message.started === "boolean") setRunStarted(message.started);
       if (typeof message.paused === "boolean") setPaused(message.paused);
       if (message.has_image === false && !message.started) setImageStatus("");
     } else if (message.type === "generation_started") {
+      setGeneration(message);
       setRunStarted(true);
       setPaused(false);
       if (message.image_conditioned === true) {
@@ -181,6 +211,10 @@ export function useOrbisSession(
   useReactorMessage((raw: unknown) => {
     const message = unwrapOrbisMessage(raw);
 
+    if (message.type === "chunk_complete") {
+      setChunks((current) => current + 1);
+      if (message.delivered) setDelivered(message.delivered);
+    }
     if (message.type === "conditions_ready") {
       conditionsReadyResolver.current?.();
       conditionsReadyResolver.current = null;
@@ -192,16 +226,16 @@ export function useOrbisSession(
     }
 
     if (message.type === "state" && message.available_resolutions) {
-      const reported = message.available_resolutions.map(String);
-      if (reported.length) {
-        setAvailableResolutions(reported);
-        setResolution((current) =>
-          !current || reported.includes(current) ? current : "",
-        );
-      }
+      offeredResolutions.current = message.available_resolutions;
+      setAvailableResolutions(message.available_resolutions);
     }
 
-    if (!disconnecting.current) updateRunState(message);
+    if (!disconnecting.current) {
+      updateRunState(message);
+      if (message.type === "generation_started" || (message.type === "state" && message.started === true)) {
+        startedResolver.current?.();
+      }
+    }
 
     if (message.type === "command_error") {
       setError(
@@ -230,6 +264,7 @@ export function useOrbisSession(
         resolve();
       };
     });
+    void promise.catch(() => {});
     return {
       promise,
       cancel: () => {
@@ -243,9 +278,13 @@ export function useOrbisSession(
   const startGeneration = async (
     startImage: File | null,
     runPrompt: string,
+    passthrough = false,
   ) => {
     if (!runPrompt.trim()) throw new Error("Enter a prompt before starting.");
     expectsImageForRun.current = Boolean(startImage);
+    setChunks(0);
+    setGeneration(null);
+    setDelivered(null);
 
     if (startImage) {
       const uploaded = await uploadFile(startImage, { name: startImage.name });
@@ -276,7 +315,15 @@ export function useOrbisSession(
       setEvents((current) => ["image_accepted", ...current].slice(0, 8));
     }
 
-    if (resolution) await sendCommand("set_resolution", { resolution });
+    const deliveryTier = selectAvailableResolution(offeredResolutions.current);
+    if (deliveryTier) {
+      const reply = unwrapOrbisMessage(
+        await sendCommand("set_resolution", { resolution: deliveryTier }),
+      );
+      if (reply?.type !== "resolution_accepted") {
+        throw new Error(reply?.reason || "Orbis did not accept the delivery resolution.");
+      }
+    }
 
     const conditionsReady = waitForSignal(
       conditionsReadyResolver,
@@ -284,6 +331,7 @@ export function useOrbisSession(
     );
     const promptReply = await sendCommand("set_prompt", {
       prompt: runPrompt.trim(),
+      ...(passthrough ? { passthrough: true } : {}),
     });
     if (!promptReply) {
       conditionsReady.cancel();
@@ -291,17 +339,66 @@ export function useOrbisSession(
     }
 
     const promptMessage = unwrapOrbisMessage(promptReply);
-    if (promptMessage.type === "command_error") {
+    if (promptMessage.type !== "prompt_accepted") {
       conditionsReady.cancel();
       throw new Error(`set_prompt: ${promptMessage.reason || "rejected"}`);
     }
 
     await conditionsReady.promise;
     setEvents((current) => ["conditions_ready", ...current].slice(0, 8));
-    await sendCommand("start", {});
-    setRunStarted(true);
-    setPaused(false);
+    const started = waitForSignal(startedResolver, "generation_started");
+    // Some deployments acknowledge start without a response body.
+    const reply = await sendCommand("start", {});
+    const message = reply ? unwrapOrbisMessage(reply) : undefined;
+    if (message?.type === "command_error") {
+      started.cancel();
+      throw new Error(message.reason || "Orbis rejected the start command.");
+    }
+    if (message?.type === "generation_started") {
+      started.cancel();
+      updateRunState(message);
+    } else {
+      await started.promise;
+    }
   };
+
+  const connectSession = () => {
+    setSessionNotice("");
+    return runAction(async () => {
+      try {
+        await connect();
+      } catch (error) {
+        clearJwt();
+        throw error;
+      }
+    });
+  };
+
+  const connectAndStart = (file: File, direction: string, passthrough = false) => {
+    setSessionNotice("");
+    return runAction(async () => {
+      if (!connected) {
+        try {
+          await connect();
+        } catch (error) {
+          clearJwt();
+          throw error;
+        }
+      }
+      await startGeneration(file, direction, passthrough);
+    });
+  };
+
+  const changeResolution = (tier: string) => runAction(async () => {
+    if (!liveResolutionSwitching || model !== "dynamic" || !connected || !runStarted || !offeredResolutions.current.includes(tier)) {
+      throw new Error("This delivery resolution is unavailable during this stream.");
+    }
+    const reply = unwrapOrbisMessage(await sendCommand("set_resolution", { resolution: tier }));
+    if (reply?.type !== "resolution_accepted") {
+      throw new Error(reply?.reason || "Orbis did not accept the delivery resolution.");
+    }
+    setResolution(tier);
+  });
 
   const selectImage = (nextImage: File | null) => {
     setImage(nextImage);
@@ -319,13 +416,18 @@ export function useOrbisSession(
     await runAction(() => startGeneration(editedImage, groundedPrompt));
   };
 
-  const steer = () =>
+  const steer = (direction = prompt, passthrough = false) =>
     runAction(async () => {
-      if (!prompt.trim()) throw new Error("Enter a prompt before steering.");
-      await sendCommand("set_prompt", { prompt: prompt.trim() });
+      if (!direction.trim()) throw new Error("Enter a prompt before steering.");
+      const reply = unwrapOrbisMessage(await sendCommand("set_prompt", {
+        prompt: direction.trim(),
+        ...(passthrough ? { passthrough: true } : {}),
+      }));
+      if (reply?.type !== "prompt_accepted") throw new Error(reply?.reason || "Orbis did not accept the steering prompt.");
     });
 
-  const disconnectSession = async () => {
+  const disconnectSession = async (idle = false) => {
+    if (disconnecting.current || inFlight.current) return;
     disconnecting.current = true;
     setRunStarted(false);
     setPaused(false);
@@ -337,7 +439,7 @@ export function useOrbisSession(
     try {
       const disconnected = await runAction(() => disconnect());
       if (disconnected) {
-        if (process.env.NODE_ENV === "development" && sessionId) {
+        if (import.meta.env.DEV && sessionId) {
           try {
             await fetch("/api/session-registry", {
               method: "DELETE",
@@ -350,11 +452,18 @@ export function useOrbisSession(
           }
         }
         clearJwt();
+        if (idle) setSessionNotice("Orbis disconnected after inactivity.");
       }
     } finally {
       disconnecting.current = false;
     }
   };
+
+  useEffect(() => {
+    if (!connected || controlsBusy) return;
+    const timer = window.setTimeout(() => void disconnectSession(true), runStarted ? 75_000 : 35_000);
+    return () => window.clearTimeout(timer);
+  }, [activity, connected, controlsBusy, runStarted]);
 
   return {
     status,
@@ -366,13 +475,26 @@ export function useOrbisSession(
     prompt,
     image,
     imageStatus,
+    generation,
+    delivered,
+    liveResolutionSwitching,
     resolution,
     availableResolutions,
     error,
+    sessionNotice,
     events,
-    connectSession: () => runAction(() => connect()),
-    disconnectSession,
-    toggleMuted: () => setMuted((current) => !current),
+    chunks,
+    startFromImage: (file: File | null, direction: string, passthrough = false) =>
+      runAction(() => startGeneration(file, direction, passthrough)),
+    connectSession,
+    connectAndStart,
+    changeResolution,
+    disconnectSession: () => disconnectSession(),
+    noteActivity: () => setActivity((value) => value + 1),
+    toggleMuted: () => {
+      setActivity((value) => value + 1);
+      setMuted((current) => !current);
+    },
     setPrompt,
     selectImage,
     setResolution,

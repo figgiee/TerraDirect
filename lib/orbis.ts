@@ -1,11 +1,21 @@
-export const ORBIS_MODEL_NAME = "reactor/visko-orbis-stable";
+export const ORBIS_MODELS = {
+  stable: "reactor/visko-orbis-stable",
+  dynamic: "reactor/visko-orbis-dynamic",
+} as const;
+
+export type OrbisModel = keyof typeof ORBIS_MODELS;
+
+export function isOrbisModelName(value: unknown): value is (typeof ORBIS_MODELS)[OrbisModel] {
+  return value === ORBIS_MODELS.stable || value === ORBIS_MODELS.dynamic;
+}
 
 export const ORBIS_TRACKS = [
   { name: "main_video", kind: "video", direction: "recvonly" },
   { name: "main_audio", kind: "audio", direction: "recvonly" },
 ] as const;
 
-export const DOCUMENTED_RESOLUTIONS = ["1080p", "2k", "4k"];
+export const DEFAULT_ORBIS_RESOLUTION = "1080p";
+export const DOCUMENTED_RESOLUTIONS = [DEFAULT_ORBIS_RESOLUTION, "2k", "4k"];
 
 export type OrbisMessage = {
   type?: string;
@@ -18,6 +28,12 @@ export type OrbisMessage = {
   image_conditioned?: boolean;
   started?: boolean;
   paused?: boolean;
+  fps?: number;
+  max_chunks?: number;
+  frames_per_chunk?: number;
+  resolution?: string;
+  delivered?: string | null;
+  live_resolution_switching?: boolean;
 };
 
 export function unwrapOrbisMessage(raw: unknown): OrbisMessage {
@@ -28,8 +44,8 @@ export function unwrapOrbisMessage(raw: unknown): OrbisMessage {
   return raw as OrbisMessage;
 }
 
-export async function requestReactorJwt() {
-  const response = await fetch("/api/token", { method: "POST" });
+export async function requestReactorJwt(model: OrbisModel) {
+  const response = await fetch("/api/token?model=" + model, { method: "POST" });
   const result = (await response.json()) as { jwt?: string; error?: string };
   if (!response.ok || !result.jwt) {
     throw new Error(result.error || "Could not create a Reactor token");
