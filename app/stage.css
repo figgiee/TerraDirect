@@ -182,7 +182,7 @@
 .stage-command input::placeholder { color: var(--secondary); }
 .stage-quick, .stage-transport { flex-wrap: wrap; }
 .stage-quick button { min-width: var(--control-height); }
-.stage-quick .stage-more-events { width: auto; max-width: 100%; }
+.stage-quick .stage-more-events { field-sizing: content; width: auto; max-width: 100%; }
 
 .stage-foot { min-width: 0; gap: 0.7em 1.5em; }
 .stage-foot p { margin: 0; color: var(--secondary); }
@@ -231,17 +231,6 @@
 .orbis-stage.is-presenting .stage-monitor { display: block; height: 100%; border: 0; border-radius: 0; }
 .orbis-stage.is-presenting .stage-picture { height: 100%; aspect-ratio: auto; background: #000; }
 .orbis-stage.is-presenting :is(.stage-monitor-bar, .stage-dock, .stage-foot, .stage-wait) { display: none; }
-
-@media (max-width: 700px) {
-  .orbis-stage {
-    height: auto;
-    min-height: 100dvh;
-    grid-template-rows: auto auto 1fr;
-  }
-  .stage-monitor { grid-template-rows: auto auto; }
-  .stage-picture { aspect-ratio: 16 / 10; }
-  .stage-dock { display: grid; }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .stage-spinner { animation: none; }
@@ -368,12 +357,35 @@
 .orbis-stage .stage-foot button { text-decoration: none; }
 
 @media (max-width: 700px) {
-  .orbis-stage { height: 100dvh; min-height: 36rem; }
-  .stage-picture { aspect-ratio: auto; }
-  .stage-dock { grid-template-columns: auto 1fr auto; }
+  .orbis-stage:not(.is-presenting) {
+    height: auto;
+    min-height: 100dvh;
+    align-content: start;
+    grid-template-rows: auto;
+  }
+  .stage-monitor { display: flex; flex-direction: column; }
+  .stage-monitor-bar {
+    position: relative;
+    order: -1;
+    gap: 0.45em;
+  }
+  .stage-picture { flex: none; aspect-ratio: 16 / 9; }
+  .stage-dock {
+    position: relative;
+    inset: auto;
+    padding: 0.85em;
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-content: stretch;
+    order: 1;
+  }
+  .stage-quick { justify-content: start; }
   .stage-steer { grid-area: 3 / 1 / 4 / -1; }
-  .stage-monitor-bar { gap: 0.45em; }
   .stage-monitor-tools { margin-left: 0; }
-  .stage-foot { top: calc(2 * var(--control-height) + 1.8em); }
+  .stage-foot {
+    position: relative;
+    inset: auto;
+    padding: 0.65em 0.85em 0;
+  }
+  .stage-foot:empty { display: none; }
   .stage-history-panel { max-height: min(45dvh, 30rem); }
 }

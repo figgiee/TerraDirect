@@ -381,8 +381,7 @@ function Stage({ session, view, model, onModelChange, presenting, present, close
             </button>
             <div id="stage-prompt-history" className="stage-history-panel" tabIndex={0} aria-label="Prompt history" hidden={!historyOpen}>
               {run ? <ol>
-                <li><strong>Opening prompt</strong><p>{run.opening}</p></li>
-                {run.directions.map((direction, index) => <li key={index}>
+                {run.directions.toReversed().map((direction) => <li key={direction.at}>
                   <strong>{direction.label}</strong>
                   <small>{direction.visibleMs !== undefined
                     ? `Marked visible · ${(direction.visibleMs / 1000).toFixed(1)} s`
@@ -399,6 +398,7 @@ function Stage({ session, view, model, onModelChange, presenting, present, close
                     </figure>}
                   </div>}
                 </li>)}
+                <li><strong>Opening prompt</strong><p>{run.opening}</p></li>
               </ol> : <p>Prompts appear here after you start a stream.</p>}
             </div>
           </div>
